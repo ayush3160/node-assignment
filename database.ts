@@ -1,5 +1,8 @@
-const Pool = require('pg').Pool
-require('dotenv').config()
+import * as pg from 'pg'
+const { Pool } = pg.default
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const pool = new Pool({
   user: process.env.DATABASE_USER,
@@ -14,4 +17,4 @@ pool.query('CREATE TABLE video (ID SERIAL PRIMARY KEY,video_id text,title text,d
 })
 
 
-module.exports = pool
+export default pool

@@ -1,10 +1,15 @@
-const express = require("express");
-const schedule = require("node-schedule");
-const axios = require("axios");
-const pool = require("./database.js");
-require("dotenv").config();
+import express, { Express, Request, Response } from "express";
+import schedule from "node-schedule";
+import axios from "axios"
+import pool from "./database"
+import dotenv from 'dotenv'
+import path from "path"
 
-const app = express();
+dotenv.config()
+import {graphqlHTTP} from 'express-graphql';
+import schema from './graphql/schema';
+
+const app : Express = express();
 
 app.use(express.json());
 
@@ -34,7 +39,7 @@ const job = schedule.scheduleJob("*/20 * * * * *", function () {
 
         pool.query(
           `INSERT INTO video(video_id,title,description,thumbnail,published_date) VALUES ('${video_id}','${title}','${description}','${thumbnail}','${published_date}') on conflict (video_id) do nothing`,
-          (err, result) => {
+          (err,result) => {
             if (err) {
               if (err.code !== "42601") {
                 console.log(err);
@@ -51,42 +56,26 @@ const job = schedule.scheduleJob("*/20 * * * * *", function () {
     });
 });
 
-app.get("/video", (req, res) => {
-  const limit = parseInt(req.query.limit);
-
-  const page = parseInt(req.query.page);
-
-  const title = req.query.title;
-
-  const startIndex = (page - 1) * limit;
-
-  const endIndex = page * limit;
-
-  pool.query(
-    `SELECT * FROM video WHERE title LIKE '%${title}%' ORDER BY (published_date DESC) OFFSET ${startIndex} LIMIT ${limit}`,
-    (err, result) => {
-      if (err) {
-        res.status(400).json({ mes: "Error occured", err: err });
-      } else {
-        let response = {};
-
-        response._links = {
-          nextPage: `http://localhost:5000/video?page=${
-            page + 1
-          }&limit=${limit}&title=${title}`,
-          prevPage: `http://localhost:5000/video?page=${
-            page - 1
-          }&limit=${limit}&title=${title}`,
-        };
-        response.page = page;
-
-        response.data = result.rows;
-
-        res.status(200).send(response);
-      }
-    }
+  app.use((req, res, next) => {
+  res.append("Access-Control-Allow-Origin", ["*"]);
+  res.append("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH");
+  res.append(
+    "Access-Control-Allow-Headers",
+    "Origin, Content-Type, X-Auth-Token"
   );
+  next();
 });
+
+
+app.get("/*", (req, res) => {
+  res.sendFile(path.join(__dirname, "./client/index.html"));
+});
+
+
+app.use('/graphql', graphqlHTTP({
+  schema,
+  graphiql: true,
+}));
 
 app.listen(5000, () => {
   console.log("Server is up on port 5000");

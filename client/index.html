@@ -1,0 +1,136 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Youtube Api Search</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <h1 style="text-align: center">Youtube Api Search</h1>
+    <div class="input-group mb-3">
+      <input
+        type="text"
+        class="form-control"
+        aria-label="Default"
+        aria-describedby="inputGroup-sizing-default"
+        id="search-input"
+      />
+      <div class="input-group-prepend">
+        <button class="btn btn-primary" id="search">Search</button>
+      </div>
+    </div>
+    <div id="videos" class="row"></div>
+  </body>
+  <script>
+    const getAllVideos = () => {
+      fetch("http://localhost:5000/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {
+            getAllVideos{
+                title
+                description
+                id
+                thumbnail
+            }
+          }`,
+        }),
+      })
+        .then((res) => {
+          return res.json();
+        })
+        .then((data) => {
+          const allVideos = data.data.getAllVideos;
+
+          const videoElement = document.getElementById("videos");
+          const x = allVideos.map((value) => {
+            const newElement = document.createElement("div");
+
+            newElement.classList.add("col-4");
+
+            newElement.innerHTML = `<div class="card col-3 mx-auto" style="width: 18rem;">
+             <img class="card-img-top" src=${value.thumbnail} alt="Card image cap" />
+             <div class="card-body">
+               <h5 class="card-title">${value.title}</h5>
+                    <p class="card-text">
+                      ${value.description}
+                    </p>
+                  </div>
+               </div>`;
+
+            videoElement.appendChild(newElement);
+          });
+        });
+    };
+
+    getAllVideos();
+
+    const getVideoByTitle = (title) => {
+      fetch("http://localhost:5000/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {
+                    videosByTitle(title: "${title}", limit: 3, page: 1) {
+                        data {
+                            title
+    	                    thumbnail
+                            description
+                        }
+  
+                    }
+          }`,
+        }),
+      })
+        .then((res) => {
+          return res.json();
+        })
+        .then((data) => {
+          const allVideos = data.data.videosByTitle.data;
+
+          console.log(allVideos);
+
+          const videoElement = document.getElementById("videos");
+
+          videoElement.innerHTML = "";
+
+          const x = allVideos.map((value) => {
+            const newElement = document.createElement("div");
+
+            newElement.classList.add("col-4");
+
+            newElement.innerHTML = `<div class="card col-3 mx-auto" style="width: 18rem;">
+             <img class="card-img-top" src=${value.thumbnail} alt="Card image cap" />
+             <div class="card-body">
+               <h5 class="card-title">${value.title}</h5>
+                    <p class="card-text">
+                      ${value.description}
+                    </p>
+                  </div>
+               </div>`;
+
+            videoElement.appendChild(newElement);
+          });
+        });
+    };
+
+    const btn = document.getElementById("search");
+
+    btn.addEventListener("click", () => {
+      const input = document.getElementById("search-input");
+
+      getVideoByTitle(input.value);
+    });
+  </script>
+</html>
